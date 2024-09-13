@@ -4,9 +4,9 @@ import { config } from "dotenv";
 import routes from './route/routes';
 import dbConnect from './config/db';
 const app = express();
-
 config();
 dbConnect();
+
 
 
 app.use(express.json());

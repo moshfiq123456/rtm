@@ -1,0 +1,99 @@
+<html>
+<head>
+    <title>Socket and Redis in Node.js</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+</head>
+<body>
+<div id="sendChat">
+    <!--    <input type="text" name="chatTxt" />-->
+    <input type="button" id="sendBtn" name="sendBtn" value="Send"/>
+</div>
+<br/>
+<div id="content"></div>
+<script>
+    const username = "redisChannel";
+    const channel = "redisChannel";
+    const agency = "RAB";
+    const fullName = "Mr Tester";
+    const isAdmin = true;
+     const serverUrl = 'localhost';
+    // const serverUrl = '122.152.48.180'
+    const port = '8089';
+    // const port = '8889';
+
+    const socket = new io('http://localhost:10000', {
+        query: `username=${username}&agency=${agency}&fullName= ${fullName}&isAdmin=${isAdmin}`,
+        autoConnect: false,
+        transports: ['websocket']
+    });
+
+    socket.auth = {username: username}
+    socket.connect();
+    console.log("session id: " + socket.sessionID);
+
+    $(document).ready(function () {
+        let content = $('#content');
+
+        // setInterval(() => {
+        // //   console.log("emitting ping to close socket");
+        // //   socket.emit("ping");
+        //   socket.close();
+        // }, 2000);
+        // setInterval(() => {
+        // //   console.log("emitting ping to open socket");
+        // //   socket.emit("ping");
+        //   socket.open();
+        // }, 3000);
+
+        socket.on('connect', function () {
+            console.log('Socket Connected', socket.connected);
+            console.log('Socket sessionID', socket.sessionID);
+            
+            if (socket.connected) {
+                console.log("Listening on channel " + channel);
+
+                socket.on(channel, function (message, callBack) {
+                    console.log('Message on channel ' + channel + ' arrived!');
+                    const cmessage = {
+                        message: message,
+                        searchIdentifier: 'bhalo laghe na',
+                        responseKey: 'PULL'
+                    };
+                    console.log(message);
+                    console.log(cmessage);
+                    const status = {status: cmessage};
+
+                    // if(message == "1") {
+                    //     console.log("getting message 1: " + message);
+                    //     callBack(status);
+                    // }
+                    callBack(cmessage);
+                });
+
+                socket.on("session", (sessionInfo) => {
+                    console.log("On session: ", sessionInfo);
+                })
+
+                socket.on('disconnect', function () {
+                    console.log('disconnected');
+                    content.html("<b>Disconnected!</b>");
+                });
+            }
+        });
+    });
+
+
+
+    const sendBtn = document.getElementById("sendBtn");
+    const emitPayload = JSON.stringify({username: channel});
+    sendBtn.addEventListener("click", () => {
+        console.log("comes");
+        socket.emit("subscribe", emitPayload, async (status) => {
+            console.log("Subscribed response : " + status);
+        })
+    })
+
+</script>
+</body>
+</html>
