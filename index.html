@@ -52,7 +52,7 @@
             
             if (socket.connected) {
                 console.log("Listening on channel " + channel);
-
+                  
                 socket.on(channel, function (message, callBack) {
                     console.log('Message on channel ' + channel + ' arrived!');
                     const cmessage = {
@@ -87,10 +87,17 @@
 
     const sendBtn = document.getElementById("sendBtn");
     const emitPayload = JSON.stringify({username: channel});
+    const roomName = "room_21";
+    const message = "bhalo laghe na";
     sendBtn.addEventListener("click", () => {
         console.log("comes");
         socket.emit("subscribe", emitPayload, async (status) => {
             console.log("Subscribed response : " + status);
+        });
+        socket.emit("send message", roomName, message, () => {
+            console.log("muhahaha");
+            console.log(roomName);
+            console.log(message);
         })
     })
 
