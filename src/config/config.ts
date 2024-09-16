@@ -8,7 +8,7 @@ const dev = {
     port: process.env.PORT  || 4000,
   },
   db: {
-    url: process.env.DB || "mongodb://localhost:27017/rtm",
+    url:  "mongodb+srv://tonyhuda74:Tonyhuda1234567@cluster0.nfqgg.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
   },
 };
 
