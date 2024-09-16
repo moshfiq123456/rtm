@@ -19,25 +19,41 @@ const PORT = process.env.PORT || 3000;
       
     });
 
-    // io2.adapter(createAdapter(pubClient, subClient));
+    io2.adapter(createAdapter(pubClient, subClient));
     instrument(io2, {
       auth: false
     });
-
-
-    pubClient.subscribe("redisChannel");
-
-    pubClient.on("message", async function (channel, message) {
-      console.log("On channel " + channel + " message arrived!")
-      console.log(`channel: ${channel}, message: ${message}`);
-      // io2.to(channel).emit(channel, message);
-      // const responses = await io2.sockets.timeout(5000).emitWithAck(channel, message);
-      // logger.info("responseess: " + responses);
-      console.log("message received in channel: " + message);
-      io2.sockets.emit(channel, message, () => {
-        console.log("hola migos"); // ok
+    io2.on('connection', async function (socket:any) {
+      socket.on('join', (roomName: any, cb: any) => {
+        socket.join(roomName);
+        cb();
       });
-    });
+      socket.on('send message', (roomName: any, message:any, cb: any) => {
+        socket.in(roomName).emit("send message", roomName, message, () => {
+          console.log("muhaha");
+          console.log(roomName +" server "+  message);
+        });
+        cb();
+      })
+      // setInterval(function(){
+      //   socket.emit('send message', "room_21", "kalla kawa", () => console.log("kallallallalal"));
+      // }, 10000)
+    })
+    
+
+    // pubClient.subscribe("redisChannel");
+
+    // pubClient.on("message", async function (channel, message) {
+    //   console.log("On channel " + channel + " message arrived!")
+    //   console.log(`channel: ${channel}, message: ${message}`);
+    //   // io2.to(channel).emit(channel, message);
+    //   // const responses = await io2.sockets.timeout(5000).emitWithAck(channel, message);
+    //   // logger.info("responseess: " + responses);
+    //   console.log("message received in channel: " + message);
+    //   io2.sockets.emit(channel, message, () => {
+    //     console.log("hola migos"); // ok
+    //   });
+    // });
     
     const salt = await bcrypt.genSalt(Number(process.env.SALT));
     const hashPassword = await bcrypt.hash("Admin@12345", salt);
