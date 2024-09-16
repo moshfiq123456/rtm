@@ -22,17 +22,26 @@ const userSchema = new Schema({
     required: false,
     default: "employee",
   },
-
+  friends: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  sentRequests: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  receivedRequests: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
   createOn: {
     type: Date,
-    default: moment().utc(true)
+    default: Date.now
   },
-
   updateAt: {
     type: Date,
-    default: moment().utc(true)
+    default: Date.now
   }
-  
 });
 
 const User = mongoose.model("User", userSchema);

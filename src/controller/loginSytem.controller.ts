@@ -11,6 +11,7 @@ import { decodeToken } from "../helpers/decodeToken";
 import User from "../model/user.model";
 import verifyRefreshToken from "../utility/verifyRefreshToken";
 import UserToken from "../model/userToken.model";
+import mongoose from "mongoose";
 
 // signup
 const SignUp = async (req: Request, res: Response) => {
@@ -96,16 +97,14 @@ const UserList = async (req: Request, res: Response) => {
   const decodedToken: any = decodeToken(req.header("Authorization"));
 
   try {
-    if (decodedToken?.roles === "super_admin") {
+   
       const users = await User.find(
         {},
-        { password:0 }
-      );
-      console.log(users);
+        { password:0 })
+     
+        
       res.status(200).json( users );
-    } else {
-      res.status(401).json({ message: "Unauthorized" });
-    }
+    
   } catch (err) {
     console.log(err);
     res.status(500).json({ error: true, message: err });
@@ -247,6 +246,95 @@ const GetAccessToken = async (req: Request, res: Response) => {
   }
 };
 
+const sendFriendRequest = async (req: Request, res: Response): Promise<Response> => {
+  const decodedToken: any = decodeToken(req.header("Authorization"));
+  console.log("success")
+  try {
+    const { userId } = req.body;
+    const requesterId = decodedToken?._id; // Assuming the user ID is available from the decoded token
+    
+    if (requesterId === userId) {
+      return res.status(400).json({ message: "You cannot send a friend request to yourself" });
+    }
+
+    const requester = await User.findById(requesterId);
+    const recipient = await User.findById(userId);
+
+    if (!requester || !recipient) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (recipient.receivedRequests.includes( requesterId )) {
+      return res.status(400).json({ message: "Friend request already sent" });
+    }
+
+    if (recipient.friends.includes(requesterId)) {
+      return res.status(400).json({ message: "You are already friends" });
+    }
+
+    recipient.receivedRequests.push(requesterId);
+    await recipient.save();
+
+    return res.status(200).json({ message: "Friend request sent successfully" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: true, message: "Internal Server Error" });
+  }
+};
+
+// Accept friend request
+const acceptFriendRequest = async (req: Request, res: Response): Promise<Response> => {
+  const decodedToken: any = decodeToken(req.header("Authorization"));
+  try {
+    const { requesterId } = req.body;
+    const userId = decodedToken?._id; // Assuming the user ID is available from the decoded token
+
+    const user = await User.findById(userId);
+    const requester = await User.findById(requesterId);
+
+    if (!user || !requester) {
+      return res.status(404).json({ message: "User or requester not found" });
+    }
+
+    if (!user.receivedRequests.includes(requesterId)) {
+      return res.status(400).json({ message: "No friend request from this user" });
+    }
+
+    user.receivedRequests = user.receivedRequests.filter(id => id !== requesterId);
+    user.friends.push(requesterId);
+
+    requester.friends.push(userId);
+    await user.save();
+    await requester.save();
+
+    return res.status(200).json({ message: "Friend request accepted" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: true, message: "Internal Server Error" });
+  }
+};
+
+// Get friend list
+const getFriendList = async (req: Request, res: Response): Promise<Response> => {
+  const decodedToken: any = decodeToken(req.header("Authorization"));
+  try {
+    const userId = decodedToken?._id; // Assuming the user ID is available from the decoded token
+
+    const user = await User.findById(userId).select('friends');
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const friends = await User.find({ _id: { $in: user.friends } }).select('userName email'); // Adjust fields as needed
+
+    return res.status(200).json(friends);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: true, message: "Internal Server Error" });
+  }
+};
+
 export {
   Login,
   SignUp,
@@ -255,5 +343,8 @@ export {
   UpdatePassword,
   Logout,
   GetAccessToken,
-  GetUser
+  GetUser,
+  getFriendList,
+  sendFriendRequest,
+  acceptFriendRequest
 };
