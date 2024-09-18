@@ -3,42 +3,47 @@ import Group from '../model/group.model';
 import User from '../model/user.model';
 import { decodeToken } from '../helpers/decodeToken';
 
-const CreateGroup = async (req: Request, res: Response) => {
+const CreateGroup = async (req: Request, res: Response): Promise<Response> => {
     const decodedToken: any = decodeToken(req.header("Authorization"));
-    const { groupName, members } = req.body; // members should be an array of user IDs
-  
     try {
-      // Validate the request body
-      if (!groupName || !members || !Array.isArray(members)) {
-        return res.status(400).json({ error: true, message: 'Invalid request data' });
-      }
+      const { groupName, members } = req.body;
   
-      // Ensure the current user is authenticated
-      const adminId = decodedToken?._id; // Assuming req.user contains the authenticated user's ID
-  
-      // Check if all members are valid users
-      const users = await User.find({ '_id': { $in: members } });
-      if (users.length !== members.length) {
-        return res.status(400).json({ error: true, message: 'One or more members are invalid' });
-      }
-  
-      // Create the group
+      // Create a new group with the admin being the logged-in user
       const newGroup = new Group({
         groupName,
-        admin: adminId,
-        members: [...members, adminId], // Add the admin to the members list
+        admin: decodedToken._id,
+        members: [...members, decodedToken._id] // Add the logged-in user as a member
       });
   
       await newGroup.save();
   
-      res.status(201).json({
-        error: false,
-        message: 'Group created successfully',
-        group: newGroup,
-      });
+      return res.status(201).json({ message: "Group created successfully", group: newGroup });
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: true, message: 'Internal Server Error' });
+      return res.status(500).json({ error: true, message: "Internal Server Error" });
     }
   };
-  export{CreateGroup}
+
+
+const GetUserGroups = async (req: Request, res: Response): Promise<Response> => {
+    const decodedToken: any = decodeToken(req.header("Authorization"));
+    try {
+      const userId = decodedToken._id;
+  
+      // Find groups where the user is either the admin or a member
+      const groups = await Group.find({
+        $or: [
+          { admin: userId },
+          { members: userId }
+        ]
+      }).populate('admin', 'userName') // Optionally populate admin field
+        .populate('members', 'userName'); // Optionally populate members field
+  
+      return res.status(200).json({ groups });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ error: true, message: "Internal Server Error" });
+    }
+  };
+  
+  export{CreateGroup,GetUserGroups}
