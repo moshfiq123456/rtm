@@ -118,11 +118,12 @@ const UserList = async (req: Request, res: Response) => {
     // Update friendStatus (true/false) based on sentRequests
     const updatedUsers = filteredUsers.map((user) => {
       // Check if the logged-in user has sent a friend request to this user
-      const hasSentFriendRequest = user.receivedRequests.includes(decodedToken._id);
-
+      const hasRecievedFriendRequest = user.receivedRequests.includes(decodedToken._id);
+      const hasSentFriendRequest = user.sentRequests.includes(decodedToken._id);
       return {
         ...user.toObject(),
-        friendStatus: hasSentFriendRequest // true if a request is sent, false otherwise
+        sentStatus: hasSentFriendRequest, // true if a request is sent, false otherwise
+        recievedStatus: hasRecievedFriendRequest
       };
     });
 
@@ -296,7 +297,7 @@ const sendFriendRequest = async (req: Request, res: Response): Promise<Response>
     }
 
     recipient.receivedRequests.push(requesterId);
-    requester.sentRequests.push(requesterId);
+    requester.sentRequests.push(userId);
     await requester.save()
     await recipient.save();
 
