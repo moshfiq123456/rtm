@@ -118,7 +118,7 @@ const UserList = async (req: Request, res: Response) => {
     // Update friendStatus (true/false) based on sentRequests
     const updatedUsers = filteredUsers.map((user) => {
       // Check if the logged-in user has sent a friend request to this user
-      const hasSentFriendRequest = loggedInUser.sentRequests.includes(user._id);
+      const hasSentFriendRequest = user.receivedRequests.includes(decodedToken._id);
 
       return {
         ...user.toObject(),
@@ -296,6 +296,8 @@ const sendFriendRequest = async (req: Request, res: Response): Promise<Response>
     }
 
     recipient.receivedRequests.push(requesterId);
+    requester.sentRequests.push(requesterId);
+    await requester.save()
     await recipient.save();
 
     return res.status(200).json({ message: "Friend request sent successfully" });
