@@ -312,7 +312,7 @@ const sendFriendRequest = async (req: Request, res: Response): Promise<Response>
 const acceptFriendRequest = async (req: Request, res: Response): Promise<Response> => {
   const decodedToken: any = decodeToken(req.header("Authorization"));
   try {
-    const { requesterId } = req.body;
+    const { requesterId, isAccept } = req.body; // Add isAccept field to the request body
     const userId = decodedToken?._id; // Assuming the user ID is available from the decoded token
 
     const user = await User.findById(userId);
@@ -326,15 +326,23 @@ const acceptFriendRequest = async (req: Request, res: Response): Promise<Respons
       return res.status(400).json({ message: "No friend request from this user" });
     }
 
-    user.receivedRequests = user.receivedRequests.filter(id => id !== requesterId);
-    user.friends.push(requesterId);
+    if (isAccept) {
+      // If request is accepted
+      user.receivedRequests = user.receivedRequests.filter(id => id !== requesterId);
+      user.friends.push(requesterId);
+      requester.friends.push(userId);
 
-    requester.friends.push(userId);
+    } else {
+      // If request is rejected
+      user.receivedRequests = user.receivedRequests.filter(id => id == userId);
+      requester.sentRequests = requester.sentRequests.filter(id => id == requesterId);
+    }
+
     await user.save();
     await requester.save();
 
-    return res.status(200).json({ message: "Friend request accepted" });
-  } catch (err) {
+    return res.status(200).json({ message: isAccept ? "Friend request accepted" : "Friend request rejected" });
+  } catch (err:any) {
     console.error(err);
     return res.status(500).json({ error: true, message: "Internal Server Error" });
   }
