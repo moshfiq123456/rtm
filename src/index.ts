@@ -10,35 +10,35 @@ const PORT = process.env.PORT || 3000;
 (async () => {
   try {;
     const server = require("http").createServer(app);
-    const pubClient = new Redis();
-    const subClient = pubClient.duplicate();
-    const io2 = require('socket.io')(server, {
-      cors: {
-          origin: '*',
-      },
+    // const pubClient = new Redis();
+    // const subClient = pubClient.duplicate();
+    // const io2 = require('socket.io')(server, {
+    //   cors: {
+    //       origin: '*',
+    //   },
       
-    });
+    // });
 
-    io2.adapter(createAdapter(pubClient, subClient));
-    instrument(io2, {
-      auth: false
-    });
-    io2.on('connection', async function (socket:any) {
-      socket.on('join', (roomName: any, cb: any) => {
-        socket.join(roomName);
-        cb();
-      });
-      socket.on('send message', (roomName: any, message:any, cb: any) => {
-        socket.in(roomName).emit("send message", roomName, message, () => {
-          console.log("muhaha");
-          console.log(roomName +" server "+  message);
-        });
-        cb();
-      })
-      // setInterval(function(){
-      //   socket.emit('send message', "room_21", "kalla kawa", () => console.log("kallallallalal"));
-      // }, 10000)
-    })
+    // io2.adapter(createAdapter(pubClient, subClient));
+    // instrument(io2, {
+    //   auth: false
+    // });
+    // io2.on('connection', async function (socket:any) {
+    //   socket.on('join', (roomName: any, cb: any) => {
+    //     socket.join(roomName);
+    //     cb();
+    //   });
+    //   socket.on('send message', (roomName: any, message:any, cb: any) => {
+    //     socket.in(roomName).emit("send message", roomName, message, () => {
+    //       console.log("muhaha");
+    //       console.log(roomName +" server "+  message);
+    //     });
+    //     cb();
+    //   })
+    //   setInterval(function(){
+    //     socket.emit('send message', "room_21", "kalla kawa", () => console.log("kallallallalal"));
+    //   }, 10000)
+    // })
     
 
     // pubClient.subscribe("redisChannel");
