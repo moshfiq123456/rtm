@@ -97,19 +97,42 @@ const UserList = async (req: Request, res: Response) => {
   const decodedToken: any = decodeToken(req.header("Authorization"));
 
   try {
-   
-      const users = await User.find(
-        {},
-        { password:0 })
-     
-        
-      res.status(200).json( users );
-    
-  } catch (err) {
+    // Fetch the logged-in user
+    const loggedInUser = await User.findOne({ _id: decodedToken._id });
+
+    if (!loggedInUser) {
+      return res.status(404).json({ error: true, message: "User not found" });
+    }
+
+    // Fetch all users except the logged-in user
+    const users = await User.find(
+      { _id: { $ne: loggedInUser._id } }, 
+      { password: 0 }
+    );
+
+    // Filter out users who are friends with the logged-in user
+    const filteredUsers = users.filter((user) => 
+      !loggedInUser.friends.includes(user._id)
+    );
+
+    // Update friendStatus (true/false) based on sentRequests
+    const updatedUsers = filteredUsers.map((user) => {
+      // Check if the logged-in user has sent a friend request to this user
+      const hasSentFriendRequest = loggedInUser.sentRequests.includes(user._id);
+
+      return {
+        ...user.toObject(),
+        friendStatus: hasSentFriendRequest // true if a request is sent, false otherwise
+      };
+    });
+
+    res.status(200).json(updatedUsers);
+  } catch (err: any) {
     console.log(err);
     res.status(500).json({ error: true, message: err });
   }
 };
+
 
 const GetUser = async (req: Request, res: Response) => {
   try {
