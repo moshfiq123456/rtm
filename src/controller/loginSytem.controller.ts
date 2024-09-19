@@ -85,6 +85,7 @@ const Login = async (req: Request, res: Response) => {
       accessToken,
       refreshToken,
       message: "Logged in successfully",
+      userId:user._id
     });
   } catch (err) {
     // logger.error({ message: err.message, timestamp: new Date().toISOString() });
