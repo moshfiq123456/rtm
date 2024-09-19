@@ -34,6 +34,7 @@ const PORT = process.env.PORT || 3000;
     io2.on("connection", async function (socket: any) {
       socket.on("join", (roomName: any, cb: any) => {
         socket.join(roomName);
+        socket.join(`${roomName}_notification`);
         cb();
       });
 
@@ -44,23 +45,32 @@ const PORT = process.env.PORT || 3000;
         cb();
       });
 
+      socket.on("send_notification", (roomName: any, message: any, cb: any) => {
+        socket
+          .in(`${roomName}_notification`)
+          .emit("send_notification", roomName, message, () => {
+            console.log(`${roomName} server: ${message}`);
+          });
+        cb();
+      });
+
       // Example message broadcast to the socket
-      setInterval(function () {
-        socket.emit("send message", "room_21", "kalla kawa", () =>
-          console.log("Periodic message sent")
-        );
-      }, 10000);
+      // setInterval(function () {
+      //   socket.emit("send message", "room_21", "kalla kawa", () =>
+      //     console.log("Periodic message sent")
+      //   );
+      // }, 10000);
     });
 
     // Subscribe with the subClient, NOT pubClient
-    subClient.subscribe("redisChannel");
+    // subClient.subscribe("redisChannel");
 
-    subClient.on("message", function (channel, message) {
-      console.log(`On channel ${channel}, message: ${message}`);
-      io2.sockets.emit(channel, message, () => {
-        console.log("Message broadcasted to all sockets");
-      });
-    });
+    // subClient.on("message", function (channel, message) {
+    //   console.log(`On channel ${channel}, message: ${message}`);
+    //   io2.sockets.emit(channel, message, () => {
+    //     console.log("Message broadcasted to all sockets");
+    //   });
+    // });
 
     // Password hashing example
     const salt = await bcrypt.genSalt(Number(process.env.SALT));
