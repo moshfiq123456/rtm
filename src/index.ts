@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import app from './app';
+import app from "./app";
 import User from "./model/user.model";
 import { createAdapter } from "@socket.io/redis-adapter";
 import { Redis } from "ioredis";
@@ -10,19 +10,20 @@ const PORT = process.env.PORT || 3000;
 (async () => {
   try {
     const server = require("http").createServer(app);
-    
+
     // Redis clients for pub/sub
     const pubClient = new Redis({
-      host: 'redis',
+      host: "redis",
       port: 6379,
       maxRetriesPerRequest: null,
     });
     const subClient = pubClient.duplicate();
 
-    const io2 = require('socket.io')(server, {
+    const io2 = require("socket.io")(server, {
       cors: {
-        origin: '*',
+        origin: "*",
       },
+      path: "/rtm_backend",
     });
 
     io2.adapter(createAdapter(pubClient, subClient));
@@ -30,14 +31,14 @@ const PORT = process.env.PORT || 3000;
       auth: false,
     });
 
-    io2.on('connection', async function (socket: any) {
-      socket.on('join', (roomName: any, cb: any) => {
+    io2.on("connection", async function (socket: any) {
+      socket.on("join", (roomName: any, cb: any) => {
         socket.join(roomName);
         cb();
       });
 
-      socket.on('send message', (roomName: any, message: any, cb: any) => {
-        socket.in(roomName).emit("send message", roomName, message, () => {
+      socket.on("send_message", (roomName: any, message: any, cb: any) => {
+        socket.in(roomName).emit("send_message", roomName, message, () => {
           console.log(`${roomName} server: ${message}`);
         });
         cb();
@@ -45,7 +46,9 @@ const PORT = process.env.PORT || 3000;
 
       // Example message broadcast to the socket
       setInterval(function () {
-        socket.emit('send message', "room_21", "kalla kawa", () => console.log("Periodic message sent"));
+        socket.emit("send message", "room_21", "kalla kawa", () =>
+          console.log("Periodic message sent")
+        );
       }, 10000);
     });
 
