@@ -22,7 +22,7 @@
     const port = '8089';
     // const port = '8889';
 
-    const socket = new io('http://localhost:10000', {
+    const socket = new io('http://localhost:3000', {
         query: `username=${username}&agency=${agency}&fullName= ${fullName}&isAdmin=${isAdmin}`,
         autoConnect: false,
         transports: ['websocket']
