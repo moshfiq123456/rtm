@@ -1,0 +1,42 @@
+version: '3'
+
+services:
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - backend
+    restart: always
+
+  mongodb:
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: tonyhuda74
+      MONGO_INITDB_ROOT_PASSWORD: Tonyhuda1234567
+    ports:
+      - "27017:27017"
+    networks:
+      - backend
+    restart: always
+
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      - redis
+      - mongodb
+    networks:
+      - backend
+    environment:
+      - MONGODB_URI=mongodb://tonyhuda74:Tonyhuda1234567@mongodb:27017/your-database-name
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=development
+    volumes:
+      - .:/usr/src/app
+    restart: always
+
+networks:
+  backend:
+    driver: bridge
