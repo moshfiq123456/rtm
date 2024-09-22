@@ -85,6 +85,7 @@ const Login = async (req: Request, res: Response) => {
       accessToken,
       refreshToken,
       message: "Logged in successfully",
+      userId:user._id
     });
   } catch (err) {
     // logger.error({ message: err.message, timestamp: new Date().toISOString() });
@@ -97,19 +98,43 @@ const UserList = async (req: Request, res: Response) => {
   const decodedToken: any = decodeToken(req.header("Authorization"));
 
   try {
-   
-      const users = await User.find(
-        {},
-        { password:0 })
-     
-        
-      res.status(200).json( users );
-    
-  } catch (err) {
+    // Fetch the logged-in user
+    const loggedInUser = await User.findOne({ _id: decodedToken._id });
+
+    if (!loggedInUser) {
+      return res.status(404).json({ error: true, message: "User not found" });
+    }
+
+    // Fetch all users except the logged-in user
+    const users = await User.find(
+      { _id: { $ne: loggedInUser._id } }, 
+      { password: 0 }
+    );
+
+    // Filter out users who are friends with the logged-in user
+    const filteredUsers = users.filter((user) => 
+      !loggedInUser.friends.includes(user._id)
+    );
+
+    // Update friendStatus (true/false) based on sentRequests
+    const updatedUsers = filteredUsers.map((user) => {
+      // Check if the logged-in user has sent a friend request to this user
+      const hasRecievedFriendRequest = user.receivedRequests.includes(decodedToken._id);
+      const hasSentFriendRequest = user.sentRequests.includes(decodedToken._id);
+      return {
+        ...user.toObject(),
+        sentStatus: hasSentFriendRequest, // true if a request is sent, false otherwise
+        recievedStatus: hasRecievedFriendRequest
+      };
+    });
+
+    res.status(200).json(updatedUsers);
+  } catch (err: any) {
     console.log(err);
     res.status(500).json({ error: true, message: err });
   }
 };
+
 
 const GetUser = async (req: Request, res: Response) => {
   try {
@@ -273,6 +298,8 @@ const sendFriendRequest = async (req: Request, res: Response): Promise<Response>
     }
 
     recipient.receivedRequests.push(requesterId);
+    requester.sentRequests.push(userId);
+    await requester.save()
     await recipient.save();
 
     return res.status(200).json({ message: "Friend request sent successfully" });
@@ -286,7 +313,7 @@ const sendFriendRequest = async (req: Request, res: Response): Promise<Response>
 const acceptFriendRequest = async (req: Request, res: Response): Promise<Response> => {
   const decodedToken: any = decodeToken(req.header("Authorization"));
   try {
-    const { requesterId } = req.body;
+    const { requesterId, isAccept } = req.body; // Add isAccept field to the request body
     const userId = decodedToken?._id; // Assuming the user ID is available from the decoded token
 
     const user = await User.findById(userId);
@@ -300,15 +327,23 @@ const acceptFriendRequest = async (req: Request, res: Response): Promise<Respons
       return res.status(400).json({ message: "No friend request from this user" });
     }
 
-    user.receivedRequests = user.receivedRequests.filter(id => id !== requesterId);
-    user.friends.push(requesterId);
+    if (isAccept) {
+      // If request is accepted
+      user.receivedRequests = user.receivedRequests.filter(id => id !== requesterId);
+      user.friends.push(requesterId);
+      requester.friends.push(userId);
 
-    requester.friends.push(userId);
+    } else {
+      // If request is rejected
+      user.receivedRequests = user.receivedRequests.filter(id => id == userId);
+      requester.sentRequests = requester.sentRequests.filter(id => id == requesterId);
+    }
+
     await user.save();
     await requester.save();
 
-    return res.status(200).json({ message: "Friend request accepted" });
-  } catch (err) {
+    return res.status(200).json({ message: isAccept ? "Friend request accepted" : "Friend request rejected" });
+  } catch (err:any) {
     console.error(err);
     return res.status(500).json({ error: true, message: "Internal Server Error" });
   }

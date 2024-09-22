@@ -1,6 +1,7 @@
 import express from 'express';
 import { acceptFriendRequest, DeleteUser, GetAccessToken, getFriendList, GetUser, Login, Logout, sendFriendRequest, SignUp, UpdatePassword, UserList } from '../controller/loginSytem.controller';
 import auth from '../middlewares/auth.middleware';
+import { CreateGroup, GetUserGroups } from '../controller/group.controller';
 
 
 const router = express.Router();
@@ -16,7 +17,8 @@ router.post('/send-friendrequest',auth,sendFriendRequest);
 router.get('/friend-list',auth,getFriendList)
 router.post('/refreshtoken',GetAccessToken);
 router.delete('/logout',Logout);
-
+router.post('/create-group',auth,CreateGroup)
+router.get('/groups',auth,GetUserGroups)
 
 
 export default router;
