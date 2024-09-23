@@ -31,14 +31,16 @@ const PORT = process.env.PORT || 3000;
       auth: false,
     });
 
-    io2.on("connection", async function (socket: any) {
+    io2.of('/chat-application').on("connection", async function (socket: any) {
       socket.on("join", (roomName: any, cb: any) => {
+        console.log("joining room: ", roomName);
         socket.join(roomName);
         socket.join(`${roomName}_notification`);
         cb();
       });
 
       socket.on("send_message", (roomName: any, message: any, cb: any) => {
+        console.log("room name: " + roomName + " message: " + message);
         socket.in(roomName).emit("send_message", roomName, message, () => {
           console.log(`${roomName} server: ${message}`);
         });

@@ -26,10 +26,10 @@
         query: `username=${username}&agency=${agency}&fullName= ${fullName}&isAdmin=${isAdmin}`,
         autoConnect: false,
         transports: ['websocket'],
-        path: '/rtm_backend'
+        path: "/rtm_backend"
     });
 
-    // socket.auth = {username: username}
+    socket.auth = {username: username}
     socket.connect();
     console.log("session id: " + socket.sessionID);
 
@@ -46,7 +46,10 @@
         // //   socket.emit("ping");
         //   socket.open();
         // }, 3000);
-
+        socket.on("send_message", (roomName, message, cb) => {
+            console.log("receiving message in roomName: " + roomName + " and message: " + message);
+            cb();
+        });
         socket.on('connect', function () {
             console.log('Socket Connected', socket.connected);
             console.log('Socket sessionID', socket.sessionID);
@@ -95,10 +98,9 @@
         socket.emit("subscribe", emitPayload, async (status) => {
             console.log("Subscribed response : " + status);
         });
-        socket.emit("send_message", roomName, message, () => {
-            console.log("muhahaha");
+        socket.emit("join", roomName, () => {
+            console.log("joining room");
             console.log(roomName);
-            console.log(message);
         })
     })
 
